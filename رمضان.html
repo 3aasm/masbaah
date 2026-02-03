@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>رفيق رمضان برو | Ramadan Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --bg-main: #020617; /* Very Dark Blue */
+            --bg-card: #1e293b;
+            --primary-gold: #fbbf24; /* Amber 400 */
+            --accent-gold: #d97706; /* Amber 600 */
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --success-green: #4ade80; /* Green 400 */
+            --nav-height: 80px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-light);
+            font-family: 'Cairo', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(251, 191, 36, 0.03) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(217, 119, 6, 0.03) 0%, transparent 40%),
+                url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fbbf24' fill-opacity='0.02'%3E%3Cpath d='M0 38.59l2.83-2.83 1.41 1.41L1.41 40H0v-1.41zM0 1.4l2.83 2.83 1.41-1.41L1.41 0H0v1.41zM38.59 40l-2.83-2.83 1.41-1.41L40 38.59V40h-1.41zM40 1.41l-2.83 2.83-1.41-1.41L38.59 0H40v1.41zM20 18.6l2.83-2.83 1.41 1.41L21.41 20l2.83 2.83-1.41 1.41L20 21.41l-2.83 2.83-1.41-1.41L18.59 20l-2.83-2.83 1.41-1.41L20 18.59z'/%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        /* --- Header --- */
+        .app-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+            z-index: 10;
+            background: linear-gradient(180deg, var(--bg-main) 0%, rgba(2,6,23,0) 100%);
+            display: flex; justify-content: space-between; align-items: center;
+            flex-direction: row-reverse;
+        }
+
+        .app-logo {
+            font-family: 'Amiri', serif;
+            background: linear-gradient(to bottom, #fbbf24, #d97706);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2rem;
+            font-weight: 700;
+            filter: drop-shadow(0 2px 10px rgba(251, 191, 36, 0.2));
+        }
+
+        .user-btn {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(251, 191, 36, 0.05)); 
+            color: var(--primary-gold);
+            width: 45px; height: 45px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid rgba(251, 191, 36, 0.3); cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .user-btn:hover {
+            transform: scale(1.05);
+            border-color: var(--primary-gold);
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+        }
+
+        .hijri-badge {
+            display: inline-block;
+            background: rgba(251, 191, 36, 0.1);
+            color: var(--primary-gold);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-top: 5px;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+        }
+
+        /* --- Main Content Area --- */
+        .pages-container {
+            height: 100%;
+            width: 100%;
+            position: relative;
+            padding-bottom: calc(var(--nav-height) + 20px);
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        .page {
+            display: none;
+            padding: 90px 20px 20px 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            animation: fadeUp 0.4s ease-out;
+            min-height: 100%;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Global Components --- */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        h2 {
+            font-family: 'Amiri', serif;
+            color: var(--text-light);
+            font-size: 1.6rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        h2 i { color: var(--primary-gold); font-size: 1.2rem; }
+
+        /* --- Home: Days Grid --- */
+        .days-grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .day-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            border-radius: 12px;
+            height: 70px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .day-card.active {
+            background: rgba(251, 191, 36, 0.15);
+            border-color: var(--primary-gold);
+            box-shadow: 0 0 10px rgba(251, 191, 36, 0.1);
+        }
+
+        .day-card.locked {
+            opacity: 0.4;
+            background: #0f172a;
+            border-color: #334155;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .day-number {
+            font-family: 'Amiri', serif;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--text-light);
+        }
+
+        .day-status {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .lock-icon {
+            position: absolute;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            bottom: 5px; left: 5px;
+        }
+
+        /* --- Tasbih Components --- */
+        .tasbih-ring-container {
+            display: flex;
+            justify-content: center;
+            margin: 30px 0;
+        }
+
+        .tasbih-ring {
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 6px solid #334155;
+            box-shadow: 20px 20px 60px #0b1120, -20px -20px 60px #223046;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tasbih-ring:active {
+            transform: scale(0.97);
+        }
+
+        .tasbih-ring.effect-on:active {
+            border-color: var(--primary-gold) !important;
+            box-shadow: 0 0 30px rgba(251, 191, 36, 0.5), inset 0 0 20px rgba(251, 191, 36, 0.2) !important;
+        }
+
+        /* الحالة المكتملة (الخضراء) */
+        .tasbih-ring.completed {
+            border-color: var(--success-green);
+            box-shadow: 0 0 40px rgba(74, 222, 128, 0.4), inset 0 0 20px rgba(74, 222, 128, 0.2);
+        }
+        
+        .tasbih-ring.completed .count-big {
+            color: var(--success-green);
+            text-shadow: 0 0 20px rgba(74, 222, 128, 0.5);
+        }
+
+        .count-big {
+            font-family: 'Amiri', serif;
+            font-size: 4.5rem;
+            color: var(--primary-gold);
+            line-height: 1;
+            transition: color 0.3s;
+        }
+
+        .target-control {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            background: rgba(0,0,0,0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .target-input {
+            background: transparent;
+            border: none;
+            color: var(--primary-gold);
+            width: 50px;
+            text-align: center;
+            font-family: 'Cairo', sans-serif;
+            font-weight: bold;
+            font-size: 1rem;
+            border-bottom: 1px solid var(--text-muted);
+        }
+
+        .btn-add-dua {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(217, 119, 6, 0.2));
+            color: var(--primary-gold);
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin: 20px auto;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            width: fit-content;
+        }
+        .btn-add-dua:hover {
+            background: var(--primary-gold);
+            color: #000;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(251, 191, 36, 0.3);
+        }
+
+        /* --- Lanterns (Prayers) --- */
+        .lantern-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            align-items: start;
+            margin-top: 30px;
+            height: 180px;
+        }
+
+        .lantern-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .rope {
+            width: 2px;
+            background: rgba(255,255,255,0.2);
+            height: 0;
+            transition: height 0.5s ease;
+        }
+
+        .lantern-body {
+            font-size: 2rem;
+            color: #334155;
+            transition: all 0.4s;
+            margin-top: -5px;
+        }
+
+        .lantern-item.active .lantern-body {
+            color: var(--primary-gold);
+            filter: drop-shadow(0 0 15px var(--primary-gold));
+            transform: scale(1.1);
+            animation: sway 3s ease-in-out infinite;
+        }
+
+        .lantern-label {
+            margin-top: 10px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        .lantern-item.active .lantern-label { color: var(--primary-gold); }
+
+        @keyframes sway {
+            0%, 100% { transform: rotate(-3deg) scale(1.1); }
+            50% { transform: rotate(3deg) scale(1.1); }
+        }
+
+        /* --- Quran Progress --- */
+        .quran-progress-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 30px;
+        }
+
+        .circular-chart {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+            max-height: 250px;
+            transform: rotate(-90deg);
+        }
+
+        .circle-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 2.5; }
+        .circle { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke: var(--primary-gold); transition: stroke-dasharray 0.8s ease; }
+
+        .quran-stats {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .quran-percent { font-size: 2.2rem; font-weight: 800; color: var(--text-light); font-family: 'Amiri', serif; }
+
+        .page-controls {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(0,0,0,0.2); padding: 10px; border-radius: 50px; margin-top: 20px;
+        }
+
+        .control-btn {
+            width: 45px; height: 45px; border-radius: 50%; border: none;
+            background: var(--bg-card); color: var(--text-light); font-size: 1.1rem;
+            cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        /* --- Bottom Nav --- */
+        .bottom-nav {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 400px; height: 70px;
+            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 40px;
+            display: flex; justify-content: space-around; align-items: center;
+            z-index: 100; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .nav-item {
+            color: var(--text-muted); display: flex; flex-direction: column; align-items: center;
+            justify-content: center; font-size: 0.7rem; gap: 4px; width: 60px;
+            transition: all 0.3s; cursor: pointer;
+        }
+
+        .nav-item.active { color: var(--primary-gold); }
+        .nav-item.active i { transform: translateY(-5px); text-shadow: 0 5px 15px rgba(251, 191, 36, 0.5); }
+        .nav-item i { font-size: 1.4rem; transition: transform 0.3s; }
+
+        /* Helpers */
+        .btn-reset {
+            background: transparent; color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 8px 20px; border-radius: 20px; font-size: 0.8rem; margin-top: 30px; cursor: pointer;
+        }
+
+        /* --- Auth Modal --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            z-index: 200; display: none; align-items: center; justify-content: center;
+            padding: 20px;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .modal-overlay.active { display: flex; }
+        
+        .auth-box {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.6));
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            width: 100%; max-width: 420px;
+            padding: 40px 30px; border-radius: 30px; 
+            border: 1px solid rgba(251, 191, 36, 0.1);
+            text-align: center; position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            transform: scale(0.95);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .auth-header { margin-bottom: 30px; }
+        .auth-header h2 {
+            font-family: 'Amiri', serif; color: var(--primary-gold); font-size: 2rem;
+            margin-bottom: 5px; text-shadow: 0 2px 10px rgba(251, 191, 36, 0.2);
+            justify-content: center;
+        }
+        .auth-header p { color: var(--text-muted); font-size: 0.9rem; }
+
+        .input-group { position: relative; margin-bottom: 20px; }
+        .input-group i {
+            position: absolute; top: 50%; right: 15px; transform: translateY(-50%);
+            color: var(--text-muted); transition: color 0.3s;
+        }
+
+        .auth-input {
+            width: 100%; padding: 15px 45px 15px 15px;
+            background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 15px; color: white; font-family: 'Cairo'; font-size: 1rem;
+            transition: all 0.3s;
+        }
+        .auth-input:focus {
+            background: rgba(0,0,0,0.4); border-color: var(--primary-gold);
+            box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.1); outline: none;
+        }
+        .auth-input:focus + i { color: var(--primary-gold); }
+
+        .auth-btn {
+            width: 100%; padding: 15px; 
+            background: linear-gradient(135deg, var(--primary-gold), var(--accent-gold));
+            color: #000; font-weight: 800; border: none; border-radius: 15px;
+            cursor: pointer; font-family: 'Cairo'; margin-top: 10px;
+            font-size: 1rem; transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
+        }
+        .auth-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(251, 191, 36, 0.4); }
+        
+        .auth-btn.secondary {
+            background: transparent; border: 2px solid rgba(251, 191, 36, 0.3);
+            color: var(--primary-gold); box-shadow: none;
+        }
+        .auth-btn.secondary:hover { background: rgba(251, 191, 36, 0.1); border-color: var(--primary-gold); }
+
+        .auth-btn.danger {
+            background: linear-gradient(135deg, #ef4444, #b91c1c); color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+        
+        .close-modal { 
+            position: absolute; top: 20px; left: 20px; 
+            width: 35px; height: 35px; background: rgba(255,255,255,0.05);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            color: var(--text-muted); cursor: pointer; transition: all 0.3s;
+        }
+        .close-modal:hover { background: rgba(239, 68, 68, 0.2); color: #ef4444; transform: rotate(90deg); }
+
+        /* Profile View Styles */
+        .profile-avatar {
+            width: 80px; height: 80px;
+            background: linear-gradient(135deg, var(--primary-gold), var(--accent-gold));
+            border-radius: 50%; margin: 0 auto 20px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.5rem; font-weight: bold; color: #000;
+            box-shadow: 0 0 30px rgba(251, 191, 36, 0.3);
+        }
+        
+        .divider {
+            height: 1px; background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
+            margin: 25px 0;
+        }
+
+        /* --- Leaderboard --- */
+        .leaderboard-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .leaderboard-user { display: flex; align-items: center; gap: 10px; }
+        .user-avatar { 
+            width: 30px; height: 30px; background: var(--accent-gold); 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem;
+        }
+
+        .particle {
+            position: fixed; z-index: 310; pointer-events: none;
+        }
+
+        /* --- Swipe Hints --- */
+        .swipe-hint {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            color: var(--text-muted); opacity: 0.2; font-size: 1.2rem; pointer-events: none;
+            animation: none !important;
+        }
+        .swipe-hint.right { right: 15px; }
+        .swipe-hint.left { left: 15px; }
+        
+        /* --- Daily Completion Animation --- */
+        .daily-complete-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 400;
+            display: none; align-items: center; justify-content: center;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+        }
+        .daily-complete-overlay.active { display: flex; animation: fadeIn 0.5s; }
+
+        .completion-container {
+            position: relative; text-align: center;
+            animation: zoomInBounce 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .comp-avatar-wrapper {
+            position: relative; width: 120px; height: 120px; margin: 0 auto;
+        }
+
+        .comp-avatar {
+            width: 100%; height: 100%; border-radius: 50%;
+            border: 4px solid var(--primary-gold);
+            box-shadow: 0 0 30px var(--primary-gold);
+            background: linear-gradient(135deg, var(--primary-gold), var(--accent-gold));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 3.5rem; color: #000; font-weight: bold;
+        }
+
+        .comp-crown {
+            position: absolute; top: -55px; left: 50%; transform: translateX(-50%) rotate(-5deg);
+            font-size: 5rem; color: #fbbf24;
+            filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.8));
+            animation: floatCrown 2s ease-in-out infinite;
+            z-index: 10;
+        }
+
+        .comp-text {
+            margin-top: 30px; color: var(--primary-gold);
+            font-family: 'Amiri', serif; font-size: 2.2rem;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+        }
+
+        @keyframes floatCrown { 
+            0%, 100% { transform: translateX(-50%) rotate(-5deg) translateY(0); } 
+            50% { transform: translateX(-50%) rotate(-5deg) translateY(-10px); } 
+        }
+        @keyframes zoomInBounce { 0% { transform: scale(0); } 70% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        /* --- New Animations for Tasbih Controls --- */
+        @keyframes spin-once { 0% { transform: rotate(0deg); } 100% { transform: rotate(-360deg); } }
+        .anim-spin { animation: spin-once 0.5s ease; }
+
+        @keyframes click-bounce { 0% { transform: scale(1); } 50% { transform: scale(0.8); } 100% { transform: scale(1); } }
+        .anim-click { animation: click-bounce 0.2s ease; }
+
+        /* --- PDF Viewer Styles --- */
+        .pdf-container {
+            width: 100%;
+            height: 55vh;
+            min-height: 350px;
+            background: #0f172a;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+            margin-bottom: 15px;
+        }
+        .pdf-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Auth Modal -->
+    <div class="modal-overlay" id="auth-modal">
+        <div class="auth-box">
+            <div class="close-modal" onclick="toggleAuthModal()">
+                <i class="fas fa-times"></i>
+            </div>
+            
+            <div id="auth-form">
+                <div class="auth-header">
+                    <h2>تسجيل الدخول</h2>
+                    <p>سجل دخولك لحفظ تقدمك ومزامنة بياناتك</p>
+                </div>
+                
+                <div class="input-group">
+                    <input type="text" id="auth-name" class="auth-input" placeholder="اسم المستخدم (للتسجيل الجديد)">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="auth-email-user" class="auth-input" placeholder="البريد الإلكتروني أو اسم المستخدم">
+                    <i class="fas fa-envelope"></i>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="auth-pass" class="auth-input" placeholder="كلمة المرور">
+                    <i class="fas fa-lock"></i>
+                </div>
+                
+                <button class="auth-btn" onclick="handleAuth('login')">دخول</button>
+                <button class="auth-btn secondary" onclick="handleAuth('register')">إنشاء حساب جديد</button>
+            </div>
+
+            <div id="user-info" style="display: none;">
+                <div class="profile-avatar" id="profile-avatar-display">U</div>
+                <h3 style="font-size: 1.5rem; color: var(--text-light); margin-bottom: 5px;" id="display-username">User</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">عضو مميز</p>
+                
+                <div class="divider"></div>
+                
+                <div class="input-group">
+                    <input type="text" id="new-username" class="auth-input" placeholder="تغيير الاسم">
+                    <i class="fas fa-pen"></i>
+                </div>
+                <button class="auth-btn secondary" style="padding: 10px; font-size: 0.9rem; margin-bottom: 15px;" onclick="updateUsername()">حفظ الاسم</button>
+                
+                <div class="input-group">
+                    <input type="password" id="new-password" class="auth-input" placeholder="كلمة مرور جديدة">
+                    <i class="fas fa-key"></i>
+                </div>
+                <button class="auth-btn secondary" style="padding: 10px; font-size: 0.9rem;" onclick="updatePassword()">تحديث كلمة المرور</button>
+
+                <div class="divider"></div>
+
+                <button class="auth-btn danger" onclick="handleLogout()">تسجيل خروج</button>
+                <button class="btn-reset" style="width: 100%; margin-top: 15px; border: none; color: var(--text-muted);" onclick="resetAll()">تصفير البيانات المحلية</button>
+            </div>
+        </div>
+    </div>
+
+    <header class="app-header">
+        <div class="user-btn" onclick="toggleAuthModal()">
+            <i class="fas fa-user"></i>
+        </div>
+        <div class="app-logo">ايام رمضان</div>
+        <div class="hijri-badge" id="date-display">...</div>
+    </header>
+
+    <div class="pages-container">
+        
+        <!-- === الصفحة الرئيسية === -->
+        <div id="page-home" class="page active">
+            <div class="glass-card" style="margin-top: 20px; text-align: center;">
+                <h3 style="color: var(--primary-gold); font-size: 1.5rem; margin-bottom: 5px;">أهلاً بك يا صائم</h3>
+                <p style="color: var(--text-muted);">اللهم تقبل منا ومنكم صالح الأعمال</p>
+            </div>
+
+            <div class="glass-card" style="margin-top: 20px;">
+                <h2 style="font-size: 1.2rem;"><i class="fas fa-trophy"></i> لوحة المتصدرين</h2>
+                <div id="leaderboard-list">
+                    <p style="text-align: center; color: var(--text-muted); font-size: 0.9rem;">جاري التحميل...</p>
+                </div>
+            </div>
+
+            <h2 style="font-size: 1.3rem;">سجل الأيام</h2>
+            <div class="days-grid-container" id="days-grid">
+                <!-- سيتم تعبئة الأيام بواسطة الجافاسكربت -->
+            </div>
+            
+            <div style="margin-top: 30px; padding-bottom: 20px;">
+                <h2 style="font-size: 1.3rem;">ملخص اليوم</h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 15px; text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: bold; color: var(--primary-gold);" id="home-prayer-count">0/5</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">الصلوات</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 15px; text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: bold; color: var(--success-green);" id="home-tasbih-total">0</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">تسابيح</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- === صفحة الصلوات === -->
+        <div id="page-prayers" class="page">
+            <div class="glass-card">
+                <h2><i class="fas fa-mosque"></i> صلواتك في المسجد</h2>
+                
+                <div class="lantern-grid" id="lanterns-container">
+                    <!-- Javascript will render lanterns -->
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <p style="font-family: 'Amiri'; font-size: 1.1rem; line-height: 1.8; color: var(--text-light); opacity: 0.8;">
+                    "إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا"
+                </p>
+            </div>
+        </div>
+
+        <!-- === صفحة الختمة === -->
+        <div id="page-quran" class="page">
+            <!-- PDF Viewer Section -->
+            <div class="glass-card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; height: 65vh; min-height: 400px;">
+                <div style="padding: 12px 20px; background: rgba(0,0,0,0.2); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <h2 style="margin: 0; font-size: 1rem; color: var(--primary-gold);"><i class="fas fa-book-open"></i> المصحف الشريف</h2>
+                    <span style="font-size: 0.7rem; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px;">PDF</span>
+                </div>
+                
+                <div style="flex: 1; position: relative; background: #f8fafc;">
+                    <!-- 
+                        تنبيه: قم بوضع رابط ملف الـ PDF الخاص بك في خاصية src أدناه 
+                        مثال: src="quran.pdf" أو رابط خارجي
+                    -->
+                    <iframe src="quran.pdf" style="width: 100%; height: 100%; border: none; display: block;" id="quran-pdf-frame"></iframe>
+                    <!-- عنصر توضيحي يظهر في حال عدم وجود ملف -->
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #64748b; pointer-events: none; z-index: 0;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Tracker Section -->
+            <div class="glass-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2 style="margin: 0; font-size: 1.1rem;"><i class="fas fa-chart-pie"></i> متابعة الختمة</h2>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">الإنجاز:</span>
+                        <span class="quran-percent" id="quran-percent" style="font-size: 1.1rem; color: var(--primary-gold);">0%</span>
+                    </div>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <div style="font-size: 1rem; color: var(--text-light); font-weight: bold;" id="surah-name">سورة الفاتحة</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">الجزء <span id="juz-num">1</span></div>
+                    </div>
+                    
+                    <div class="page-controls" style="margin: 0; padding: 5px; background: rgba(0,0,0,0.3); flex: 0 0 auto;">
+                        <button class="control-btn" onclick="adjustPage(1)" style="width: 35px; height: 35px; font-size: 0.9rem;"><i class="fas fa-plus"></i></button>
+                        <div style="text-align: center; min-width: 50px;">
+                            <span style="font-size: 0.6rem; color: var(--text-muted); display: block;">صفحة</span>
+                            <div style="font-size: 1.1rem; font-weight: bold; color: var(--text-light); line-height: 1;" id="page-display-num">1</div>
+                        </div>
+                        <button class="control-btn" onclick="adjustPage(-1)" style="width: 35px; height: 35px; font-size: 0.9rem;"><i class="fas fa-minus"></i></button>
+                    </div>
+                </div>
+                
+                <input type="range" id="quran-slider" min="1" max="604" value="1" style="width: 100%; margin-top: 20px; accent-color: var(--primary-gold);" oninput="sliderInput(this.value)">
+            
+                <div class="target-control" style="margin-top: 15px; width: 100%; justify-content: space-between; padding: 8px 15px;">
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">ورد اليوم: <span id="quran-daily-count" style="color: var(--success-green); font-weight: bold; font-size: 1rem;">0</span></span>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">الهدف:</span>
+                        <input type="number" id="quran-target-input" class="target-input" value="25" min="1" onchange="updateQuranTarget(this.value)" style="width: 45px; font-size: 0.9rem;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- === صفحة الأذكار === -->
+        <div id="page-tasbih" class="page">
+            <div class="glass-card" style="text-align: center;">
+                <h2><i class="fas fa-fingerprint"></i> المسبحة</h2>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: -15px; margin-bottom: 15px;" id="total-duas-display">عدد الاذكار : 0</p>
+                
+                <div id="dua-container" style="margin: 20px 0; height: 80px; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: grab; touch-action: none; position: relative;">
+                    <div class="swipe-hint left"><i class="fas fa-angle-double-down"></i></div>
+                    <p id="dua-text" style="font-size: 1.1rem; color: var(--text-light); transition: transform 0.2s, opacity 0.2s; width: 100%; padding: 0 40px;">سبحان الله وبحمده</p>
+                    <div class="swipe-hint right"><i class="fas fa-angle-double-up"></i></div>
+                    <button id="btn-delete-dua" onclick="deleteCurrentDua(event)" style="display: none; position: absolute; top: 5px; left: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; z-index: 20; align-items: center; justify-content: center; font-size: 0.7rem;" title="حذف الذكر"><i class="fas fa-trash"></i></button>
+                </div>
+
+                <div class="tasbih-ring-container">
+                    <div class="tasbih-ring" id="tasbih-btn">
+                        <div class="count-big" id="tasbih-count">0</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">اضغط للتسبيح</div>
+                    </div>
+                </div>
+                
+                <div class="target-control">
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">الهدف اليومي:</span>
+                    <input type="number" id="target-input" class="target-input" value="100" min="1" onchange="updateTarget(this.value)">
+                </div>
+
+                <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
+                    <button class="control-btn" onclick="changeDua(-1, this)"><i class="fas fa-chevron-right"></i></button>
+                    <button class="control-btn" onclick="resetCurrentDua(this)" style="color: var(--accent-gold);"><i class="fas fa-undo"></i></button>
+                    <button class="control-btn" onclick="toggleTasbihEffect(this)" id="btn-effect"><i class="fas fa-lightbulb"></i></button>
+                    <button class="control-btn" onclick="changeDua(1, this)"><i class="fas fa-chevron-left"></i></button>
+                </div>
+
+                <button class="btn-add-dua" onclick="addNewDua()">
+                    <i class="fas fa-plus-circle"></i> إضافة ذكر جديد
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="switchPage('page-home', this)">
+            <i class="fas fa-home"></i>
+            <span>الرئيسية</span>
+        </div>
+        <div class="nav-item" onclick="switchPage('page-prayers', this)">
+            <i class="fas fa-mosque"></i>
+            <span>الصلوات</span>
+        </div>
+        <div class="nav-item" onclick="switchPage('page-quran', this)">
+            <i class="fas fa-book-open"></i>
+            <span>الختمة</span>
+        </div>
+        <div class="nav-item" onclick="switchPage('page-tasbih', this)">
+            <i class="fas fa-hands-praying"></i>
+            <span>الأذكار</span>
+        </div>
+    </nav>
+
+    <script>
+        // --- Firebase Config ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDgpvPriikwqdW3Fqu7_il4L8SW1eKxzDM",
+            authDomain: "msbaah-5f4bf.firebaseapp.com",
+            projectId: "msbaah-5f4bf",
+            storageBucket: "msbaah-5f4bf.firebasestorage.app",
+            messagingSenderId: "491415778121",
+            appId: "1:491415778121:web:1c0d796e3ef4346539e098",
+            measurementId: "G-6WDBJEXXZQ"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // --- Data ---
+        const prayersConfig = [
+            { id: 'fajr', name: 'الفجر', height: 40 },
+            { id: 'dhuhr', name: 'الظهر', height: 25 },
+            { id: 'asr', name: 'العصر', height: 25 },
+            { id: 'maghrib', name: 'المغرب', height: 50 },
+            { id: 'isha', name: 'العشاء', height: 60 }
+        ];
+
+        // الاذكار الافتراضية
+        const defaultDuas = [
+            "سبحان الله",
+            "الحمد لله",
+            "لا إله إلا الله",
+            "الله أكبر",
+            "أستغفر الله العظيم",
+            "اللهم صل على محمد"
+        ];
+
+        // Surah Start Pages Mapping
+        const surahStartPages = [
+            [1, "الفاتحة"], [2, "البقرة"], [50, "آل عمران"], [77, "النساء"], [106, "المائدة"], [128, "الأنعام"], [151, "الأعراف"], [177, "الأنفال"], [187, "التوبة"], [208, "يونس"], 
+            [221, "هود"], [235, "يوسف"], [249, "الرعد"], [255, "إبراهيم"], [262, "الحجر"], [267, "النحل"], [282, "الإسراء"], [293, "الكهف"], [305, "مريم"], [312, "طه"], 
+            [322, "الأنبياء"], [332, "الحج"], [342, "المؤمنون"], [350, "النور"], [359, "الفرقان"], [367, "الشعراء"], [377, "النمل"], [385, "القصص"], [396, "العنكبوت"], [404, "الروم"], 
+            [411, "لقمان"], [415, "السجدة"], [418, "الأحزاب"], [428, "سبأ"], [434, "فاطر"], [440, "يس"], [446, "الصافات"], [453, "ص"], [458, "الزمر"], [467, "غافر"], 
+            [477, "فصلت"], [483, "الشورى"], [489, "الزخرف"], [496, "الدخان"], [499, "الجاثية"], [502, "الأحقاف"], [507, "محمد"], [511, "الفتح"], [515, "الحجرات"], [518, "ق"], 
+            [520, "الذاريات"], [523, "الطور"], [526, "النجم"], [528, "القمر"], [531, "الرحمن"], [534, "الواقعة"], [537, "الحديد"], [542, "المجادلة"], [545, "الحشر"], [549, "الممتحنة"], 
+            [551, "الصف"], [553, "الجمعة"], [554, "المنافقون"], [556, "التغابن"], [558, "الطلاق"], [560, "التحريم"], [562, "الملك"], [564, "القلم"], [566, "الحاقة"], [568, "المعارج"], 
+            [570, "نوح"], [572, "الجن"], [574, "المزمل"], [575, "المدثر"], [577, "القيامة"], [578, "الإنسان"], [580, "المرسلات"], [582, "النبأ"], [583, "النازعات"], [585, "عبس"], 
+            [586, "التكوير"], [587, "الإنفطار"], [588, "المطففين"], [589, "الإنشقاق"], [590, "البروج"], [591, "الطارق"], [591, "الأعلى"], [592, "الغاشية"], [593, "الفجر"], [594, "البلد"], 
+            [595, "الشمس"], [595, "الليل"], [596, "الضحى"], [596, "الشرح"], [597, "التين"], [597, "العلق"], [598, "القدر"], [598, "البينة"], [599, "الزلزلة"], [599, "العاديات"], 
+            [600, "القارعة"], [600, "التكاثر"], [601, "العصر"], [601, "الهمزة"], [601, "الفيل"], [602, "قريش"], [602, "الماعون"], [602, "الكوثر"], [603, "الكافرون"], [603, "النصر"], 
+            [603, "المسد"], [604, "الإخلاص"], [604, "الفلق"], [604, "الناس"]
+        ];
+
+        let state = {
+            startDate: null, // تاريخ أول استخدام للتطبيق (لبدء الشبكة)
+            prayers: {}, 
+            quranPage: 1,
+            duas: {}, // { "date": { index: count } }
+            customDuas: [], // الاذكار المضافة يدوياً
+            duaTargets: {}, // { index: targetNumber } (map dua index to target)
+            quranDailyTarget: 25,
+            quranReads: {} // { "date": count }
+        };
+        
+        let currentDuaIndex = 0;
+        let activeDuaList = []; // مزيج من الافتراضي والخاص
+        let currentUser = null;
+
+        // --- Init ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            initDate();
+            
+            // تهيئة قائمة الأذكار
+            activeDuaList = [...defaultDuas, ...state.customDuas];
+            
+            renderDaysGrid();
+            renderLanterns();
+            updateQuranUI();
+            updateTasbihUI();
+            updateHomeSummary();
+            fetchLeaderboard();
+            
+            // Tasbih Interaction
+            document.getElementById('tasbih-btn').addEventListener('click', (e) => {
+                incrementTasbih();
+                // Animation
+                const ring = e.currentTarget;
+                ring.style.transform = 'scale(0.95)';
+                setTimeout(() => ring.style.transform = 'scale(1)', 100);
+            });
+
+            // Auth Listener
+            auth.onAuthStateChanged(user => {
+                currentUser = user;
+                if (user) {
+                    document.getElementById('auth-form').style.display = 'none';
+                    document.getElementById('user-info').style.display = 'block';
+                    document.getElementById('display-username').textContent = user.displayName || user.email;
+                    document.getElementById('profile-avatar-display').textContent = (user.displayName || user.email)[0].toUpperCase();
+                    loadDataFromCloud(); // Load data from cloud on login
+                } else {
+                    document.getElementById('auth-form').style.display = 'block';
+                    document.getElementById('user-info').style.display = 'none';
+                }
+                // Re-fetch leaderboard to show current user status if needed
+                fetchLeaderboard();
+            });
+
+            // Dua Swipe Interaction
+            const duaContainer = document.getElementById('dua-container');
+            let startY = 0;
+            let isDragging = false;
+
+            duaContainer.addEventListener('touchstart', e => {
+                startY = e.touches[0].clientY;
+            }, {passive: false});
+
+            duaContainer.addEventListener('touchend', e => {
+                const endY = e.changedTouches[0].clientY;
+                handleSwipe(startY, endY);
+            });
+
+            duaContainer.addEventListener('mousedown', e => {
+                isDragging = true;
+                startY = e.clientY;
+                duaContainer.style.cursor = 'grabbing';
+            });
+
+            duaContainer.addEventListener('mouseup', e => {
+                if (!isDragging) return;
+                isDragging = false;
+                duaContainer.style.cursor = 'grab';
+                handleSwipe(startY, e.clientY);
+            });
+            
+            duaContainer.addEventListener('mouseleave', () => {
+                if(isDragging) {
+                    isDragging = false;
+                    duaContainer.style.cursor = 'grab';
+                }
+            });
+        });
+
+        // --- Navigation ---
+        function switchPage(pageId, navEl) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            navEl.classList.add('active');
+
+            if(pageId === 'page-home') {
+                renderDaysGrid(); // Re-render to check dates
+                updateHomeSummary();
+            }
+        }
+
+        // --- State Management ---
+        function loadState() {
+            const saved = localStorage.getItem('ramadanPro_v2');
+            const today = new Date().toDateString();
+            
+            if (saved) {
+                state = JSON.parse(saved);
+                // ترحيل البيانات القديمة إذا لزم الأمر
+                if(!state.customDuas) state.customDuas = [];
+                if(!state.duaTargets) state.duaTargets = {};
+                if(!state.startDate) state.startDate = today;
+                if(!state.quranDailyTarget) state.quranDailyTarget = 25;
+                if(!state.quranReads) state.quranReads = {};
+                if(state.tasbihEffect === undefined) state.tasbihEffect = true;
+            } else {
+                state.startDate = today; // تعيين اليوم كأول يوم عند الاستخدام لأول مرة
+                state.tasbihEffect = true;
+            }
+            
+            // التأكد من وجود سجل لليوم
+            if (!state.prayers[today]) {
+                state.prayers[today] = { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false };
+            }
+            if (!state.duas[today]) {
+                state.duas[today] = {};
+            }
+        }
+
+        function syncData() {
+            if (!currentUser) return;
+            const today = new Date().toDateString();
+            
+            // Calculate Total Score (Global)
+            let totalScore = 0;
+            let totalPrayers = 0;
+            let totalAzkar = 0;
+
+            if(state.prayers) {
+                for(let d in state.prayers) {
+                    const pCount = Object.values(state.prayers[d]).filter(Boolean).length;
+                    totalPrayers += pCount;
+                    totalScore += pCount * 10;
+                }
+            }
+            if(state.duas) {
+                for(let d in state.duas) {
+                    const tCount = Object.values(state.duas[d]).reduce((a,b)=>a+b, 0);
+                    totalAzkar += tCount;
+                    totalScore += Math.floor(tCount / 10);
+                }
+            }
+
+            db.collection('users').doc(currentUser.uid).set({ 
+                state: JSON.stringify(state), 
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+                name: currentUser.displayName || currentUser.email.split('@')[0],
+                totalScore: totalScore,
+                totalPrayers: totalPrayers,
+                totalAzkar: totalAzkar
+            }, { merge: true });
+
+            // Update Daily Activity for Leaderboard
+            const pCount = state.prayers[today] ? Object.values(state.prayers[today]).filter(Boolean).length : 0;
+            const tCount = state.duas[today] ? Object.values(state.duas[today]).reduce((a, b) => a + b, 0) : 0;
+            
+            db.collection('daily_activity').doc(today).collection('users').doc(currentUser.uid).set({
+                name: currentUser.displayName || currentUser.email.split('@')[0],
+                prayers: pCount,
+                tasbih: tCount,
+                score: (pCount * 10) + Math.floor(tCount / 10)
+            });
+        }
+
+        function loadDataFromCloud() {
+            if (!currentUser) return;
+            
+            db.collection('users').doc(currentUser.uid).get().then((doc) => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    if (data.state) {
+                        try {
+                            const cloudState = JSON.parse(data.state);
+                            state = cloudState;
+                            
+                            // Ensure today exists in loaded state
+                            const today = new Date().toDateString();
+                            if (!state.prayers) state.prayers = {};
+                            if (!state.prayers[today]) {
+                                state.prayers[today] = { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false };
+                            }
+                            if (!state.duas) state.duas = {};
+                            if (!state.duas[today]) state.duas[today] = {};
+                            
+                            // Ensure defaults and rebuild lists
+                            if(!state.customDuas) state.customDuas = [];
+                            activeDuaList = [...defaultDuas, ...state.customDuas];
+                            
+                            // Save to local storage
+                            localStorage.setItem('ramadanPro_v2', JSON.stringify(state));
+                            
+                            // Update UI
+                            renderDaysGrid();
+                            renderLanterns();
+                            updateQuranUI();
+                            updateTasbihUI();
+                            updateHomeSummary();
+                            
+                        } catch (e) {
+                            console.error("Error parsing cloud data", e);
+                        }
+                    }
+                } else {
+                    // No cloud data, sync current local data
+                    syncData();
+                }
+            }).catch((error) => {
+                console.error("Error loading data:", error);
+            });
+        }
+
+        function saveState() {
+            localStorage.setItem('ramadanPro_v2', JSON.stringify(state));
+            if (currentUser) syncData();
+        }
+
+        function initDate() {
+            try {
+                const hijri = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', {
+                    day: 'numeric', month: 'long', year: 'numeric'
+                }).format(new Date());
+                document.getElementById('date-display').textContent = hijri;
+            } catch (e) {
+                document.getElementById('date-display').textContent = new Date().toLocaleDateString('ar-EG');
+            }
+        }
+
+        // --- Home: Days Grid Logic ---
+        function renderDaysGrid() {
+            const container = document.getElementById('days-grid');
+            container.innerHTML = '';
+            
+            // نفترض رمضان 30 يوماً بدءاً من تاريخ الاستخدام الأول
+            const startDate = new Date(state.startDate);
+            const today = new Date();
+            // تصفير الوقت للمقارنة العادلة
+            today.setHours(0,0,0,0);
+            startDate.setHours(0,0,0,0);
+
+            for (let i = 0; i < 30; i++) {
+                const dayDate = new Date(startDate);
+                dayDate.setDate(startDate.getDate() + i);
+                
+                const isPast = dayDate < today;
+                const isToday = dayDate.getTime() === today.getTime();
+                const isFuture = dayDate > today;
+                const dateStr = dayDate.toDateString();
+
+                const div = document.createElement('div');
+                div.className = `day-card ${isToday ? 'active' : ''} ${isFuture ? 'locked' : ''}`;
+                
+                // حساب حالة اليوم (إذا كان ماضياً)
+                let statusIcon = '';
+                if(isPast || isToday) {
+                    // التحقق من الصلوات لذلك اليوم
+                    const p = state.prayers[dateStr];
+                    const d = state.duas[dateStr];
+                    
+                    let pCount = 0;
+                    let tCount = 0;
+                    
+                    if(p) pCount = Object.values(p).filter(Boolean).length;
+                    if(d) tCount = Object.values(d).reduce((a,b)=>a+b, 0);
+
+                    if(p || d) {
+                        statusIcon = `<div style="display:flex; flex-direction:column; align-items:center; line-height:1.1;"><span class="day-status">${pCount}/5 صلوات</span><span class="day-status" style="color:var(--success-green); font-size:0.55rem;">${tCount} ذكر</span></div>`;
+                    } else {
+                        statusIcon = `<span class="day-status">--</span>`;
+                    }
+                }
+
+                div.innerHTML = `
+                    <div class="day-number">${i + 1}</div>
+                    ${isFuture ? '<i class="fas fa-lock lock-icon"></i>' : statusIcon}
+                `;
+                
+                // يمكن إضافة حدث عند النقر للأيام السابقة لعرض التفاصيل (تطوير مستقبلي)
+                container.appendChild(div);
+            }
+        }
+        
+        function updateHomeSummary() {
+            const today = new Date().toDateString();
+            const pCount = state.prayers[today] ? Object.values(state.prayers[today]).filter(Boolean).length : 0;
+            document.getElementById('home-prayer-count').textContent = `${pCount}/5`;
+
+            const todayDuas = state.duas[today] || {};
+            let totalTasbih = 0;
+            for(let key in todayDuas) totalTasbih += todayDuas[key];
+            document.getElementById('home-tasbih-total').textContent = totalTasbih;
+        }
+
+        // --- Prayers ---
+        function renderLanterns() {
+            const container = document.getElementById('lanterns-container');
+            container.innerHTML = '';
+            const today = new Date().toDateString();
+            
+            // Ensure today exists
+            if (!state.prayers[today]) {
+                state.prayers[today] = { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false };
+            }
+            const todayPrayers = state.prayers[today];
+
+            prayersConfig.forEach(p => {
+                const isDone = todayPrayers[p.id];
+                const div = document.createElement('div');
+                div.className = `lantern-item ${isDone ? 'active' : ''}`;
+                div.onclick = (e) => togglePrayer(p.id, e);
+                div.innerHTML = `
+                    <div class="rope" style="height: ${p.height}px"></div>
+                    <i class="fas fa-khanda lantern-body"></i>
+                    <div class="lantern-label">${p.name}</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function togglePrayer(id, e) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const today = new Date().toDateString();
+            state.prayers[today][id] = !state.prayers[today][id];
+            saveState();
+            renderLanterns();
+            if(state.prayers[today][id]) {
+                fireLeaves(rect);
+                checkDailyCompletion();
+            }
+            if (navigator.vibrate) navigator.vibrate(20);
+        }
+
+        // --- Quran ---
+        function updateQuranUI() {
+            const page = state.quranPage;
+            const total = 604;
+            
+            document.getElementById('page-display-num').textContent = page;
+            document.getElementById('quran-slider').value = page;
+            
+            const percent = Math.round((page / total) * 100);
+            document.getElementById('quran-percent').textContent = `${percent}%`;
+            if(document.getElementById('quran-stroke')) document.getElementById('quran-stroke').setAttribute('stroke-dasharray', `${percent}, 100`);
+
+            const juz = Math.ceil(page / 20);
+            document.getElementById('juz-num').textContent = juz;
+            
+            // Logic for Surah Name
+            let surah = "القرآن الكريم";
+            for (let i = 0; i < surahStartPages.length; i++) {
+                if (page >= surahStartPages[i][0]) {
+                    surah = "سورة " + surahStartPages[i][1];
+                } else {
+                    break;
+                }
+            }
+            document.getElementById('surah-name').textContent = surah;
+            
+            // Update Daily Count
+            const today = new Date().toDateString();
+            const dailyCount = (state.quranReads && state.quranReads[today]) || 0;
+            if(document.getElementById('quran-daily-count')) document.getElementById('quran-daily-count').textContent = dailyCount;
+            if(document.getElementById('quran-target-input')) document.getElementById('quran-target-input').value = state.quranDailyTarget || 25;
+        }
+
+        function updateQuranTarget(val) {
+            state.quranDailyTarget = parseInt(val);
+            saveState();
+            updateQuranUI();
+        }
+
+        function adjustPage(delta) {
+            let newVal = state.quranPage + delta;
+            if (newVal < 1) newVal = 1;
+            if (newVal > 604) newVal = 604;
+            state.quranPage = newVal;
+            saveState();
+            updateQuranUI();
+            
+            // Track daily reads if moving forward
+            if (delta > 0) {
+                const today = new Date().toDateString();
+                if (!state.quranReads) state.quranReads = {};
+                if (!state.quranReads[today]) state.quranReads[today] = 0;
+                state.quranReads[today] += delta;
+                saveState();
+                updateQuranUI();
+                if (state.quranReads[today] === state.quranDailyTarget) {
+                    fireQuranEffect();
+                    if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
+                }
+            }
+        }
+
+        function sliderInput(val) {
+            state.quranPage = parseInt(val);
+            saveState();
+            updateQuranUI();
+        }
+
+        // --- Tasbih (New Features) ---
+        function updateTasbihUI() {
+            const currentDua = activeDuaList[currentDuaIndex];
+            document.getElementById('dua-text').textContent = currentDua;
+            
+            const today = new Date().toDateString();
+            const currentCount = (state.duas[today] && state.duas[today][currentDuaIndex]) || 0;
+            const target = state.duaTargets[currentDuaIndex] || 100;
+
+            document.getElementById('tasbih-count').textContent = currentCount;
+            document.getElementById('target-input').value = target;
+
+            // تغيير اللون إذا اكتمل الهدف
+            const ring = document.getElementById('tasbih-btn');
+            if (currentCount >= target) {
+                ring.classList.add('completed');
+            } else {
+                ring.classList.remove('completed');
+            }
+
+            // Effect state
+            if (state.tasbihEffect) {
+                ring.classList.add('effect-on');
+                document.getElementById('btn-effect').style.color = 'var(--primary-gold)';
+            } else {
+                ring.classList.remove('effect-on');
+                document.getElementById('btn-effect').style.color = 'var(--text-muted)';
+            }
+
+            // تحديث عدد الأذكار الكلي
+            document.getElementById('total-duas-display').textContent = `عدد الاذكار : ${activeDuaList.length}`;
+
+            // إظهار زر الحذف للأذكار المضافة يدوياً فقط
+            const deleteBtn = document.getElementById('btn-delete-dua');
+            if (currentDuaIndex >= defaultDuas.length) {
+                deleteBtn.style.display = 'flex';
+            } else {
+                deleteBtn.style.display = 'none';
+            }
+        }
+
+        function incrementTasbih() {
+            const today = new Date().toDateString();
+            if (!state.duas[today]) state.duas[today] = {};
+            
+            // زيادة العداد
+            const currentVal = state.duas[today][currentDuaIndex] || 0;
+            state.duas[today][currentDuaIndex] = currentVal + 1;
+            
+            saveState();
+            updateTasbihUI();
+            
+            // اهتزاز عند الاكتمال
+            const target = state.duaTargets[currentDuaIndex] || 100;
+            if (state.duas[today][currentDuaIndex] === target) {
+                if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
+                fireTasbihEffect();
+                checkDailyCompletion();
+            } else {
+                if (navigator.vibrate) navigator.vibrate(10);
+            }
+        }
+
+        function toggleTasbihEffect(btn) {
+            if(btn) {
+                btn.classList.add('anim-click');
+                setTimeout(() => btn.classList.remove('anim-click'), 200);
+            }
+            state.tasbihEffect = !state.tasbihEffect;
+            saveState();
+            updateTasbihUI();
+        }
+
+        function handleSwipe(start, end) {
+            const diff = start - end;
+            const threshold = 30;
+            if (Math.abs(diff) > threshold) {
+                // diff > 0 : Swipe Up (Next)
+                // diff < 0 : Swipe Down (Prev)
+                const direction = diff > 0 ? 1 : -1;
+                animateDuaTransition(direction);
+            }
+        }
+
+        function animateDuaTransition(direction) {
+            const textEl = document.getElementById('dua-text');
+            textEl.style.opacity = '0';
+            textEl.style.transform = `translateY(${direction * -20}px)`;
+            
+            setTimeout(() => {
+                changeDua(direction);
+                textEl.style.transition = 'none';
+                textEl.style.transform = `translateY(${direction * 20}px)`;
+                void textEl.offsetWidth; // Force Reflow
+                textEl.style.transition = 'transform 0.2s, opacity 0.2s';
+                textEl.style.opacity = '1';
+                textEl.style.transform = 'translateY(0)';
+            }, 200);
+        }
+
+        function changeDua(delta, btn) {
+            if(btn) {
+                btn.classList.add('anim-click');
+                setTimeout(() => btn.classList.remove('anim-click'), 200);
+            }
+            currentDuaIndex += delta;
+            if (currentDuaIndex < 0) currentDuaIndex = activeDuaList.length - 1;
+            if (currentDuaIndex >= activeDuaList.length) currentDuaIndex = 0;
+            updateTasbihUI();
+        }
+
+        function updateTarget(val) {
+            const target = parseInt(val);
+            if(target > 0) {
+                state.duaTargets[currentDuaIndex] = target;
+                saveState();
+                updateTasbihUI(); // لتحديث لون العداد فوراً
+            }
+        }
+
+        function addNewDua() {
+            const text = prompt("أدخل نص الذكر الجديد:");
+            if (text && text.trim() !== "") {
+                state.customDuas.push(text.trim());
+                saveState();
+                
+                // تحديث القائمة والانتقال للذكر الجديد
+                activeDuaList = [...defaultDuas, ...state.customDuas];
+                currentDuaIndex = activeDuaList.length - 1;
+                updateTasbihUI();
+            }
+        }
+        
+        function deleteCurrentDua(e) {
+            if(e) e.stopPropagation();
+            
+            if(currentDuaIndex < defaultDuas.length) return;
+
+            if(confirm('هل أنت متأكد من حذف هذا الذكر؟')) {
+                const customIndex = currentDuaIndex - defaultDuas.length;
+                state.customDuas.splice(customIndex, 1);
+                
+                // Rebuild list
+                activeDuaList = [...defaultDuas, ...state.customDuas];
+                currentDuaIndex = Math.max(0, currentDuaIndex - 1);
+                
+                saveState();
+                updateTasbihUI();
+            }
+        }
+
+        function resetCurrentDua(btn) {
+            if(btn) {
+                btn.classList.add('anim-spin');
+                setTimeout(() => btn.classList.remove('anim-spin'), 500);
+            }
+            const today = new Date().toDateString();
+            if(confirm('تصفير عداد هذا الذكر؟')) {
+                if(state.duas[today]) {
+                    state.duas[today][currentDuaIndex] = 0;
+                    saveState();
+                    updateTasbihUI();
+                }
+            }
+        }
+
+        function resetAll() {
+            if(confirm('سيتم حذف جميع البيانات والبدء من جديد. هل أنت متأكد؟')) {
+                localStorage.removeItem('ramadanPro_v2');
+                location.reload();
+            }
+        }
+
+        // --- Auth Functions ---
+        function toggleAuthModal() {
+            const modal = document.getElementById('auth-modal');
+            modal.classList.toggle('active');
+        }
+
+        async function handleAuth(type) {
+            const emailOrUser = document.getElementById('auth-email-user').value;
+            const pass = document.getElementById('auth-pass').value;
+            const name = document.getElementById('auth-name').value;
+            
+            if (!emailOrUser || !pass) return alert('يرجى ملء البيانات');
+
+            // Handle Username vs Email
+            let email = emailOrUser;
+            if (!email.includes('@')) {
+                email = emailOrUser + "@ramadanpro.app";
+            }
+
+            try {
+                if (type === 'register') {
+                    if (!name) return alert('يرجى إدخال اسم المستخدم للتسجيل');
+                    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+                    await cred.user.updateProfile({ displayName: name });
+                    
+                    // Reset State for new user (Start from zero)
+                    const today = new Date().toDateString();
+                    state = {
+                        startDate: today,
+                        prayers: {}, 
+                        quranPage: 1,
+                        duas: {}, 
+                        customDuas: [], 
+                        duaTargets: {},
+                        quranDailyTarget: 25,
+                        quranReads: {},
+                        tasbihEffect: true
+                    };
+                    state.prayers[today] = { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false };
+                    state.duas[today] = {};
+                    activeDuaList = [...defaultDuas];
+                    currentDuaIndex = 0;
+                    
+                    saveState();
+                    updateHomeSummary();
+                    updateQuranUI();
+                    updateTasbihUI();
+                    renderDaysGrid();
+                    renderLanterns();
+
+                    // Save initial data
+                    syncData();
+                } else {
+                    await auth.signInWithEmailAndPassword(email, pass);
+                }
+                toggleAuthModal();
+            } catch (e) {
+                alert("خطأ: " + e.message);
+            }
+        }
+
+        function handleLogout() {
+            auth.signOut();
+            toggleAuthModal();
+        }
+
+        async function updateUsername() {
+            const newName = document.getElementById('new-username').value;
+            if (!newName) return alert('يرجى إدخال الاسم الجديد');
+            try {
+                await auth.currentUser.updateProfile({ displayName: newName });
+                document.getElementById('display-username').textContent = newName;
+                document.getElementById('new-username').value = '';
+                alert('تم تحديث الاسم بنجاح');
+                syncData();
+            } catch (e) { alert("خطأ: " + e.message); }
+        }
+
+        async function updatePassword() {
+            const newPass = document.getElementById('new-password').value;
+            if (!newPass) return alert('يرجى إدخال كلمة المرور الجديدة');
+            try {
+                await auth.currentUser.updatePassword(newPass);
+                document.getElementById('new-password').value = '';
+                alert('تم تحديث كلمة المرور بنجاح');
+            } catch (e) { alert("خطأ: " + e.message + "\nقد يتطلب ذلك إعادة تسجيل الدخول."); }
+        }
+
+        // --- Leaderboard ---
+        function fetchLeaderboard() {
+            const list = document.getElementById('leaderboard-list');
+            
+            db.collection('users')
+                .orderBy('totalScore', 'desc').limit(5)
+                .onSnapshot(snapshot => {
+                    if(snapshot.empty) {
+                        list.innerHTML = '<p style="text-align: center; color: var(--text-muted); font-size: 0.9rem;">لا يوجد متصدرين حالياً</p>';
+                        return;
+                    }
+                    list.innerHTML = '';
+                    let rank = 1;
+                    snapshot.forEach(doc => {
+                        const d = doc.data();
+                        const name = (d.name || 'مستخدم').toString();
+                        const score = d.totalScore || 0;
+                        
+                        let pCount = d.totalPrayers;
+                        let aCount = d.totalAzkar;
+
+                        // Fallback calculation if fields missing
+                        if (pCount === undefined || aCount === undefined) {
+                            pCount = 0; aCount = 0;
+                            if (d.state) {
+                                try {
+                                    const s = JSON.parse(d.state);
+                                    if(s.prayers) for(let k in s.prayers) pCount += Object.values(s.prayers[k]).filter(Boolean).length;
+                                    if(s.duas) for(let k in s.duas) aCount += Object.values(s.duas[k]).reduce((a,b)=>a+b, 0);
+                                } catch(e) {}
+                            }
+                        }
+
+                        const div = document.createElement('div');
+                        div.className = 'leaderboard-item';
+                        
+                        let rankDisplay = `<span style="margin-left:10px; font-weight:bold; color:var(--text-muted); width:20px; text-align:center;">${rank}</span>`;
+                        if(rank === 1) rankDisplay = `<i class="fas fa-trophy" style="margin-left:10px; color:#fbbf24;"></i>`;
+                        else if(rank === 2) rankDisplay = `<i class="fas fa-medal" style="margin-left:10px; color:#94a3b8;"></i>`;
+                        else if(rank === 3) rankDisplay = `<i class="fas fa-medal" style="margin-left:10px; color:#cd7f32;"></i>`;
+
+                        div.innerHTML = `
+                            <div class="leaderboard-user">
+                                ${rankDisplay}
+                                <div class="user-avatar">${name.charAt(0).toUpperCase()}</div>
+                                <div style="display:flex; flex-direction:column;">
+                                    <span>${name}</span>
+                                    <span style="font-size:0.65rem; color:var(--text-muted);">
+                                        <i class="fas fa-mosque"></i> ${pCount} صلوات | <i class="fas fa-fingerprint"></i> ${aCount} أذكار
+                                    </span>
+                                </div>
+                            </div>
+                            <div style="font-size: 0.8rem; color: var(--primary-gold);">
+                                <i class="fas fa-star"></i> ${score} نقطة
+                            </div>
+                        `;
+                        list.appendChild(div);
+                        rank++;
+                    });
+                }, error => {
+                    console.error("Leaderboard Error:", error);
+                    if (error.code === 'permission-denied') {
+                        list.innerHTML = '<p style="text-align: center; color: #ef4444; font-size: 0.8rem;">يرجى تسجيل الدخول أو تعديل قواعد البيانات للسماح بالقراءة العامة.</p>';
+                    } else if (error.code === 'failed-precondition') {
+                        list.innerHTML = '<p style="text-align: center; color: #ef4444; font-size: 0.8rem;">مطلوب إنشاء فهرس (Index) في Firebase Console.</p>';
+                    } else {
+                        list.innerHTML = `<p style="text-align: center; color: #ef4444; font-size: 0.8rem;">حدث خطأ في جلب البيانات</p>`;
+                    }
+                });
+        }
+
+        // --- Daily Completion Logic ---
+        function checkDailyCompletion() {
+            const today = new Date().toDateString();
+            const p = state.prayers[today] || {};
+            const pCount = Object.values(p).filter(Boolean).length;
+            
+            // Check Tasbih (current index target)
+            const currentCount = (state.duas[today] && state.duas[today][currentDuaIndex]) || 0;
+            const target = state.duaTargets[currentDuaIndex] || 100;
+            const tasbihDone = currentCount >= target;
+
+        }
+
+        // --- Animation ---
+        function fireLeaves(rect) {
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top;
+            const colors = ['#9ca3af', '#d1d5db', '#6b7280', '#e5e7eb'];
+            
+            for (let i = 0; i < 12; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.innerHTML = '<i class="fas fa-leaf"></i>';
+                const size = Math.random() * 6 + 4;
+                p.style.width = size + 'px';
+                p.style.height = size + 'px';
+                p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                p.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                p.style.left = centerX + 'px';
+                p.style.top = centerY + 'px';
+                p.style.color = colors[Math.floor(Math.random() * colors.length)];
+                p.style.fontSize = (Math.random() * 12 + 10) + 'px';
+                
+                const tx = (Math.random() - 0.5) * 100;
+                const ty = Math.random() * 100 + 20;
+                
+                p.animate([
+                    { transform: `translate(0, 0) rotate(0deg)`, opacity: 1 },
+                    { transform: `translate(${tx}px, ${ty}px) rotate(${Math.random()*360}deg)`, opacity: 0 }
+                ], { duration: 1000 + Math.random() * 1000, easing: 'cubic-bezier(0, .9, .57, 1)' }).onfinish = () => p.remove();
+                
+                document.body.appendChild(p);
+            }
+        }
+
+        function fireTasbihEffect() {
+            const ring = document.getElementById('tasbih-btn');
+            const rect = ring.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const colors = ['#fbbf24', '#fcd34d', '#ffffff'];
+
+            for (let i = 0; i < 30; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.innerHTML = '<i class="fas fa-star"></i>';
+                const size = Math.random() * 8 + 4;
+                p.style.width = size + 'px';
+                p.style.height = size + 'px';
+                p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                p.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                p.style.left = centerX + 'px';
+                p.style.top = centerY + 'px';
+                p.style.color = colors[Math.floor(Math.random() * colors.length)];
+                p.style.fontSize = (Math.random() * 15 + 8) + 'px';
+                
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = Math.random() * 120 + 60;
+                
+                p.animate([
+                    { transform: `translate(0, 0) scale(0)`, opacity: 1 },
+                    { transform: `translate(${Math.cos(angle)*velocity}px, ${Math.sin(angle)*velocity}px) scale(1)`, opacity: 0 }
+                ], { duration: 800 + Math.random() * 400, easing: 'ease-out' }).onfinish = () => p.remove();
+                
+                document.body.appendChild(p);
+            }
+        }
+
+    </script>
+</body>
+</html>
